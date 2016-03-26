@@ -9535,13 +9535,31 @@ The named casts are:
 * `reinterpret_cast`
 * `dynamic_cast`
 * `std::move`         // `move(x)` is an rvalue reference to `x`
-* `std::forward`      // `forward(x)` is an rvalue reference to `x`
+* `std::forward`      // `forward<T>(x)` is conditionally an rvalue reference to `x`
 * `gsl::narrow_cast`  // `narrow_cast<T>(x)` is `static_cast<T>(x)`
 * `gsl::narrow`       // `narrow<T>(x)` is `static_cast<T>(x)` if `static_cast<T>(x) == x` or it throws `narrowing_error`
 
 ##### Example
 
-    ???
+    int* p1 = (int*) foo.get_ptr() ; // bad, may be unsafe reinterpret_cast
+    auto p1 = static_cast<int*>(foo.get_ptr()) ; // OK
+    
+    Base* base_ptr = (Base*) foo.get_ptr() ; // Bad
+    auto base_ptr = static_cast<Base*>(foo.get_ptr()) ; // OK
+    
+    DerivedB* some_derived_ptr = (DerivedB*) foo.get_ptr() ; // Bad
+    auto some_derived_ptr = dynamic_cast<DerivedB*>(foo.get_ptr()) ; // OK
+    
+    auto a = narrow_cast<int>(foo.get_float()); // OK, clear intention
+    auto a2 = int(foo.getFloat()); // Bad - Function-style cast.
+    
+    auto obj = SomeClass(foo.get_float()); // OK, Function-style cast with class type.
+    auto obj = SomeClass{foo.get_float()}; // OK, Preferred brace initialization.
+    auto obj2 = static_cast<SomeClass>(foo.get_float()); // OK with class types.
+    
+##### Note
+
+See section [Prefer the {} initializer syntax](ES.23).
 
 ##### Note
 
@@ -9558,7 +9576,7 @@ for example.)
 
 ##### Enforcement
 
-Flag C-style and functional casts.
+Flag all C-style casts, and functional casts to non-class types.
 
 ## <a name="Res-casts-const"></a>ES.50: Don't cast away `const`
 
